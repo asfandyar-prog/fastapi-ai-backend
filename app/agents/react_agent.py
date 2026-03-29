@@ -12,3 +12,4 @@ async def stream_agent_response(message: str, history: list) -> AsyncGenerator[s
     words = f"Streaming response to: {message}".split()
     for word in words:
         yield f"data: {word} \n\n"
+

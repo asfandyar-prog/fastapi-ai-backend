@@ -1,0 +1,14 @@
+
+.venv/
+*.env
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+uploads/
+.venv/
+venv/
+*.egg-info/
+dist/
+*.python-version
+.idea/
