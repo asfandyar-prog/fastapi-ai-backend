@@ -9,7 +9,9 @@ from contextlib import asynccontextmanager
 from sqlalchemy import select
 from app.images import imagekit
 from imagekitio.models.UploadFileRequestOptions import UploadFileRequestOptions 
-
+import shutil
+import os
+import uuid
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,17 +27,43 @@ async def upload_file(
     caption: str = Form(...),
     session: AsyncSession = Depends(get_async_session)
     ):
-    post = Post(
-        caption=caption,
-        url="dummy_url",
-        file_type="photo",
-        file_name="dummy name"
+
+    temp_file=None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False , suffix=os.path.splittext(file.filename)[1]) as temp_file:
+            temp_file_path = temp_file.name
+            shutil.copyfileobj(file.file, temp_file)
         
-    )
-    session.add(post)
-    await session.commit()
-    await session.refresh(post)
-    return post
+        upload_result=imagekit.upload_file(
+            file=open(temp_file_path, "rb"),
+            file_name=file.filename,
+            options=UploadFileRequestOptions(
+                use_unique_file_name=True,
+                tages=["backend-upload"],
+
+            )
+        )
+
+        if upload_result.response.http_status_code == 200:
+
+
+
+            post = Post(
+                caption=caption,
+                url=upload_result.url,
+                file_type="video" if file.content_type.startswith("video") else "image",
+                file_name=upload_result.name
+            )
+            session.add(post)
+            await session.commit()
+            await session.refresh(post)
+            return post
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            os.link(temp_file_path)
+        file.file.close()
 
 
 @app.get("/feed")
