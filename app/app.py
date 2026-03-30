@@ -7,10 +7,10 @@ from contextlib import asynccontextmanager
 
 
 
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     await create_db_and_tables()
-#     yield
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await create_db_and_tables()
+    yield
 
 
 app= FastAPI(lifespan=lifespan)
