@@ -11,9 +11,8 @@ from sqlalchemy import select
 
 from app.schemas import PostCreate, PostResponse
 from app.db import Post, create_db_and_tables, get_async_session
-from app.images import imageKit
-from imagekitio.models.UploadFileRequestOptions import UploadFileRequestOptions
-
+from imagekitio import ImageKit  # ✅
+from imagekitio.types import FileUploadParams
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_db_and_tables()
@@ -36,14 +35,13 @@ async def upload_file(
             temp_file_path = temp_file.name
             shutil.copyfileobj(file.file, temp_file)
 
-        upload_result = imageKit.upload_file(
-            file=open(temp_file_path, "rb"),
-            file_name=file.filename,
-            options=UploadFileRequestOptions(
-                use_unique_file_name=True,
-                tags=["backend-upload"],
-            )
-        )
+        # ✅ NEW - correct for current imagekitio version
+        upload_result = ImageKit.files.upload(
+        file=open(temp_file_path, "rb"),
+        file_name=file.filename,
+        use_unique_file_name=True,
+        tags=["backend-upload"],
+    )
 
         post = Post(
             caption=caption,
@@ -83,3 +81,23 @@ async def get_feed(
             "created_at": post.created_at.isoformat()
         })
     return posts_data
+
+
+
+@app.delete("/posts/{post_id}")
+async def delete_post(post_id: str, session: AsyncSession = Depends(get_async_session)):
+    try:
+        post_uuid = uuid.UUID(post_id)
+        result = await session.execute(select(Post).where(Post.id == post_uuid))
+        post= result.scalar().first()
+
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")   
+        
+        await session.delete(post)
+        await session.commit()
+
+        return {"success":True,"message":"Post deleted successfully"    }
+    
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid post ID format")
