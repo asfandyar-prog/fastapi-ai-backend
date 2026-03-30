@@ -89,15 +89,15 @@ async def delete_post(post_id: str, session: AsyncSession = Depends(get_async_se
     try:
         post_uuid = uuid.UUID(post_id)
         result = await session.execute(select(Post).where(Post.id == post_uuid))
-        post= result.scalar().first()
+    #     post= result.scalar().first()
 
-        if not post:
-            raise HTTPException(status_code=404, detail="Post not found")   
+    #     if not post:
+    #         raise HTTPException(status_code=404, detail="Post not found")   
         
-        await session.delete(post)
-        await session.commit()
+    #     await session.delete(post)
+    #     await session.commit()
 
-        return {"success":True,"message":"Post deleted successfully"    }
+    #     return {"success":True,"message":"Post deleted successfully"    }
     
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid post ID format")
+    # except ValueError:
+    #     raise HTTPException(status_code=400, detail="Invalid post ID format")
